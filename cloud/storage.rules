@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function hasActiveGrant(patientUid) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'doctor'
+        && firestore.exists(/databases/(default)/documents/grants/$(patientUid + '_' + request.auth.uid))
+        && firestore.get(/databases/(default)/documents/grants/$(patientUid + '_' + request.auth.uid)).data.status == 'active';
+    }
+
+    match /ecg/{patientUid}/{fileName} {
+      allow read: if (signedIn() && request.auth.uid == patientUid)
+                  || hasActiveGrant(patientUid);
+      allow write: if false;
+    }
+
+    // Everything else is denied by default.
+  }
+}
