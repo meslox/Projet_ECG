@@ -1,0 +1,61 @@
+{
+  "task": "Normal vs AF, PhysioNet/CinC 2017 training data",
+  "sampling_rate_hz": 300,
+  "window_samples": 3000,
+  "preprocess": "bandpass 0.5-40 Hz (order 3, filtfilt), per-window z-score",
+  "aggregation": "mean window probability over non-overlapping 10 s windows",
+  "threshold": 0.2571564335376024,
+  "files": {
+    "fp32": "af_cnn_se_fp32.tflite",
+    "int8": "af_cnn_se_int8.tflite"
+  },
+  "int8_kind": "full-integer INT8",
+  "size_kb": {
+    "fp32": 576.44921875,
+    "int8": 197.6171875
+  },
+  "pc_latency_ms_int8": 0.7320216500011156,
+  "results": {
+    "val": {
+      "keras": {
+        "acc": 0.9827387802071347,
+        "sens": 0.9459459459459459,
+        "spec": 0.9881266490765171,
+        "auc": 0.9960065606503601
+      },
+      "fp32": {
+        "acc": 0.9838895281933256,
+        "sens": 0.954954954954955,
+        "spec": 0.9881266490765171,
+        "auc": 0.9960065606503601
+      },
+      "int8": {
+        "acc": 0.9815880322209436,
+        "sens": 0.9369369369369369,
+        "spec": 0.9881266490765171,
+        "auc": 0.9959590197057215
+      }
+    },
+    "test": {
+      "keras": {
+        "acc": 0.9712313003452244,
+        "sens": 0.9099099099099099,
+        "spec": 0.9802110817941952,
+        "auc": 0.9892795169840025
+      },
+      "fp32": {
+        "acc": 0.9712313003452244,
+        "sens": 0.9099099099099099,
+        "spec": 0.9802110817941952,
+        "auc": 0.9892795169840025
+      },
+      "int8": {
+        "acc": 0.9712313003452244,
+        "sens": 0.9099099099099099,
+        "spec": 0.9802110817941952,
+        "auc": 0.9901827949321353
+      }
+    }
+  },
+  "limitations": "Other and Noisy recordings excluded; no patient IDs; single device type; screening aid, not a diagnostic device"
+}

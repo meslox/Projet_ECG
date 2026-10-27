@@ -1,0 +1,11 @@
+metric,value
+accuracy,0.9712
+sensitivity (recall),0.9099
+specificity,0.9802
+precision,0.8707
+F1,0.8899
+Cohen kappa,0.8733
+MCC,0.8736
+balanced accuracy,0.9451
+ROC AUC,0.9893
+average precision,0.9149
