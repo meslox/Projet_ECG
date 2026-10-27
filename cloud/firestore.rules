@@ -2,9 +2,125 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Temporary: deny everything until real rules are written and tested.
-    match /{document=**} {
-      allow read, write: if false;
+
+    function signedIn() {
+      return request.auth != null;
     }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function isRole(uid, r) {
+      return exists(userPath(uid)) && get(userPath(uid)).data.role == r;
+    }
+
+    function grantPath(patientUid, doctorUid) {
+      return /databases/$(database)/documents/grants/$(patientUid + '_' + doctorUid);
+    }
+
+    function hasActiveGrant(patientUid) {
+      return signedIn()
+        && isRole(request.auth.uid, 'doctor')
+        && exists(grantPath(patientUid, request.auth.uid))
+        && get(grantPath(patientUid, request.auth.uid)).data.status == 'active';
+    }
+
+    function canReadPatientData(patientUid) {
+      return isOwner(patientUid) || hasActiveGrant(patientUid);
+    }
+
+    function validName(v) {
+      return v is string && v.size() > 0 && v.size() <= 80;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['displayName', 'role', 'createdAt'])
+        && request.resource.data.role == 'patient'
+        && validName(request.resource.data.displayName)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isOwner(uid)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName'])
+        && validName(request.resource.data.displayName);
+      allow delete: if false;
+    }
+
+    match /doctorDirectory/{code} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /grants/{grantId} {
+      allow read: if signedIn()
+        && (resource.data.patientUid == request.auth.uid
+            || resource.data.doctorUid == request.auth.uid);
+
+      allow create: if signedIn()
+        && isRole(request.auth.uid, 'patient')
+        && request.resource.data.keys().hasOnly(
+             ['patientUid', 'doctorUid', 'status', 'patientName', 'grantedAt'])
+        && request.resource.data.patientUid == request.auth.uid
+        && isRole(request.resource.data.doctorUid, 'doctor')
+        && grantId == request.auth.uid + '_' + request.resource.data.doctorUid
+        && request.resource.data.status == 'active'
+        && validName(request.resource.data.patientName)
+        && request.resource.data.grantedAt == request.time;
+
+      allow update: if signedIn()
+        && resource.data.patientUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'revokedAt', 'grantedAt'])
+        && request.resource.data.status in ['active', 'revoked']
+        && (request.resource.data.status == 'revoked'
+            ? request.resource.data.revokedAt == request.time
+            : request.resource.data.grantedAt == request.time);
+
+      allow delete: if false;
+    }
+
+    match /patients/{patientUid}/recordings/{recordingId} {
+      allow read: if canReadPatientData(patientUid);
+      allow write: if false;
+
+      match /reviews/{reviewId} {
+        allow read: if canReadPatientData(patientUid);
+        allow create: if hasActiveGrant(patientUid)
+          && exists(/databases/$(database)/documents/patients/$(patientUid)/recordings/$(recordingId))
+          && request.resource.data.keys().hasOnly(['doctorUid', 'status', 'finding', 'createdAt'])
+          && request.resource.data.doctorUid == request.auth.uid
+          && request.resource.data.status in ['reviewed', 'needs_followup', 'inconclusive']
+          && request.resource.data.finding is string
+          && request.resource.data.finding.size() <= 500
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+
+      match /privateNotes/{noteId} {
+        allow read: if hasActiveGrant(patientUid)
+          && resource.data.doctorUid == request.auth.uid;
+        allow create: if hasActiveGrant(patientUid)
+          && exists(/databases/$(database)/documents/patients/$(patientUid)/recordings/$(recordingId))
+          && request.resource.data.keys().hasOnly(['doctorUid', 'note', 'createdAt'])
+          && request.resource.data.doctorUid == request.auth.uid
+          && request.resource.data.note is string
+          && request.resource.data.note.size() <= 2000
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    match /devices/{deviceId} {
+      allow read: if signedIn() && resource.data.ownerPatientUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Everything else (deviceSecrets, auditLogs, ...) is denied by default.
   }
 }
