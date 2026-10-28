@@ -1,4 +1,5 @@
 import { useAuth } from '../auth/AuthContext'
+import DoctorDashboard from './DoctorDashboard'
 import PatientDashboard from './PatientDashboard'
 
 export default function Home() {
@@ -28,10 +29,7 @@ export default function Home() {
       ) : profile.role === 'patient' ? (
         <PatientDashboard patientUid={user.uid} />
       ) : (
-        <section className="rounded-lg bg-white p-6 shadow">
-          <p>Signed in as a <strong>doctor</strong>. Patients who authorise you will appear here.</p>
-          <p className="mt-2 text-sm text-slate-500">Doctor dashboard coming in a later step.</p>
-        </section>
+        <DoctorDashboard doctorUid={user.uid} />
       )}
     </div>
   )

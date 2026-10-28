@@ -125,6 +125,26 @@ describe('firestore rules', () => {
         collection(as('d1'), 'grants'), where('doctorUid', '==', 'd1'))));
       await assertFails(getDocs(collection(as('d1'), 'grants')));
     });
+
+    it('lets a patient revoke and then re-authorise the same doctor', async () => {
+      const db = as('p1');
+      await assertSucceeds(updateDoc(doc(db, 'grants/p1_d1'), {
+        status: 'revoked', revokedAt: serverTimestamp(),
+      }));
+      await assertFails(getDoc(doc(as('d1'), 'patients/p1/recordings/r1')));
+      await assertSucceeds(updateDoc(doc(db, 'grants/p1_d1'), {
+        status: 'active', grantedAt: serverTimestamp(),
+      }));
+      await assertSucceeds(getDoc(doc(as('d1'), 'patients/p1/recordings/r1')));
+    });
+    it('denies a patient changing grant fields other than status and timestamps', async () => {
+      await assertFails(updateDoc(doc(as('p1'), 'grants/p1_d1'), {
+        doctorUid: 'd2', status: 'active', grantedAt: serverTimestamp(),
+      }));
+    });
+    it('denies activating a grant without a fresh grantedAt', async () => {
+      await assertFails(updateDoc(doc(as('p1'), 'grants/p1_d1'), { status: 'active' }));
+    });
   });
 
   describe('reviews and private notes', () => {
