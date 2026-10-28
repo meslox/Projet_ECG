@@ -1,4 +1,5 @@
 import { useAuth } from '../auth/AuthContext'
+import PatientDashboard from './PatientDashboard'
 
 export default function Home() {
   const { user, profile, logout } = useAuth()
@@ -19,20 +20,17 @@ export default function Home() {
         </button>
       </header>
 
-      {!profile ? (
+      {!profile || !user ? (
         <p role="alert" className="rounded bg-red-50 p-4 text-red-700">
           Your account ({user?.email}) has no profile record, so no dashboard can be shown.
           Please sign out and contact the administrator.
         </p>
+      ) : profile.role === 'patient' ? (
+        <PatientDashboard patientUid={user.uid} />
       ) : (
         <section className="rounded-lg bg-white p-6 shadow">
-          <p>
-            Signed in as a <strong>{profile.role}</strong>.
-            {profile.role === 'patient'
-              ? ' Your ECG recordings will appear here.'
-              : ' Patients who authorise you will appear here.'}
-          </p>
-          <p className="mt-2 text-sm text-slate-500">Dashboard coming in the next step.</p>
+          <p>Signed in as a <strong>doctor</strong>. Patients who authorise you will appear here.</p>
+          <p className="mt-2 text-sm text-slate-500">Doctor dashboard coming in a later step.</p>
         </section>
       )}
     </div>

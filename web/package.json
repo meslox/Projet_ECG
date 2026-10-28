@@ -15,7 +15,8 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.5",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "uplot": "^1.6.32"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
