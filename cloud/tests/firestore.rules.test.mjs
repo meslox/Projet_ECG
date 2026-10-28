@@ -186,6 +186,39 @@ describe('firestore rules', () => {
       });
       await assertFails(getDoc(doc(as('d2'), 'patients/p1/recordings/r1/privateNotes/n1')));
     });
+
+    it('lets an authorised doctor add a private note', async () => {
+      await assertSucceeds(setDoc(
+        doc(as('d1'), 'patients/p1/recordings/r1/privateNotes/n2'),
+        { doctorUid: 'd1', note: 'x', createdAt: serverTimestamp() }));
+    });
+    it('denies private notes from a patient, an unauthorised doctor, or as another doctor', async () => {
+      const n = (uid) => ({ doctorUid: uid, note: 'x', createdAt: serverTimestamp() });
+      await assertFails(setDoc(doc(as('p1'), 'patients/p1/recordings/r1/privateNotes/n3'), n('p1')));
+      await assertFails(setDoc(doc(as('d2'), 'patients/p1/recordings/r1/privateNotes/n3'), n('d2')));
+      await assertFails(setDoc(doc(as('d1'), 'patients/p1/recordings/r1/privateNotes/n3'), n('d2')));
+    });
+    it('denies oversized or invalid review and note content', async () => {
+      const bad = (extra) => setDoc(
+        doc(as('d1'), 'patients/p1/recordings/r1/reviews/rv9'),
+        { doctorUid: 'd1', status: 'reviewed', finding: 'ok', createdAt: serverTimestamp(), ...extra });
+      await assertFails(bad({ finding: 'x'.repeat(501) }));
+      await assertFails(bad({ status: 'confirmed_af' }));
+      await assertFails(setDoc(
+        doc(as('d1'), 'patients/p1/recordings/r1/privateNotes/n9'),
+        { doctorUid: 'd1', note: 'x'.repeat(2001), createdAt: serverTimestamp() }));
+    });
+    it('denies a review for a recording that does not exist', async () => {
+      await assertFails(setDoc(
+        doc(as('d1'), 'patients/p1/recordings/r404/reviews/rv1'),
+        { doctorUid: 'd1', status: 'reviewed', finding: 'ok', createdAt: serverTimestamp() }));
+    });
+    it('lets a doctor list only their own private notes', async () => {
+      await assertSucceeds(getDocs(query(
+        collection(as('d1'), 'patients/p1/recordings/r1/privateNotes'),
+        where('doctorUid', '==', 'd1'))));
+      await assertFails(getDocs(collection(as('d1'), 'patients/p1/recordings/r1/privateNotes')));
+    });
   });
 
   describe('server-only collections', () => {

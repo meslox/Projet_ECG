@@ -25,7 +25,7 @@ function PatientRecordingRoute() {
   if (!user || !id || profile?.role !== 'patient') return <Navigate to="/" replace />
   return (
     <Page>
-      <RecordingView patientUid={user.uid} recordingId={id} backTo="/" />
+      <RecordingView patientUid={user.uid} recordingId={id} backTo="/" viewerUid={user.uid} canReview={false} />
     </Page>
   )
 }
@@ -47,7 +47,13 @@ function DoctorRecordingRoute() {
   if (!user || !pid || !id || profile?.role !== 'doctor') return <Navigate to="/" replace />
   return (
     <Page>
-      <RecordingView patientUid={pid} recordingId={id} backTo={`/patients/${pid}`} />
+      <RecordingView
+        patientUid={pid}
+        recordingId={id}
+        backTo={`/patients/${pid}`}
+        viewerUid={user.uid}
+        canReview
+      />
     </Page>
   )
 }

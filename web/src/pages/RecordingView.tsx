@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AiDisclaimer from '../components/AiDisclaimer'
-import { getRecording, listReviews, loadEcgSamples } from '../data/recordings'
-import { predictionText, reviewStatusText } from '../labels'
-import type { Recording, Review } from '../types'
+import ReviewSection from '../components/ReviewSection'
+import { getRecording, loadEcgSamples } from '../data/recordings'
+import { predictionText } from '../labels'
+import type { Recording } from '../types'
 
 const EcgChart = lazy(() => import('../components/EcgChart'))
 
@@ -11,16 +12,16 @@ interface Props {
   patientUid: string
   recordingId: string
   backTo: string
+  viewerUid: string
+  canReview: boolean
 }
 
 const when = (ts: { toDate(): Date }) => ts.toDate().toLocaleString()
 
-export default function RecordingView({ patientUid, recordingId, backTo }: Props) {
+export default function RecordingView({ patientUid, recordingId, backTo, viewerUid, canReview }: Props) {
   const [rec, setRec] = useState<Recording | null>(null)
-  const [reviews, setReviews] = useState<Review[]>([])
   const [samples, setSamples] = useState<Float64Array | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [reviewsError, setReviewsError] = useState<string | null>(null)
   const [chartError, setChartError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -35,13 +36,6 @@ export default function RecordingView({ patientUid, recordingId, backTo }: Props
           return
         }
         setRec(r)
-        listReviews(patientUid, recordingId)
-          .then((v) => {
-            if (!cancelled) setReviews(v)
-          })
-          .catch(() => {
-            if (!cancelled) setReviewsError('Could not load clinician reviews.')
-          })
         loadEcgSamples(r.storagePath)
           .then((s) => {
             if (!cancelled) setSamples(s)
@@ -115,19 +109,12 @@ export default function RecordingView({ patientUid, recordingId, backTo }: Props
             </p>
           </section>
 
-          <section className="rounded-lg border-l-4 border-emerald-500 bg-white p-4 shadow">
-            <h2 className="mb-2 text-lg font-semibold">Clinician review</h2>
-            {reviewsError && <p role="alert" className="text-red-600">{reviewsError}</p>}
-            {!reviewsError && reviews.length === 0 && (
-              <p className="text-sm text-slate-600">Not reviewed by a clinician yet.</p>
-            )}
-            {reviews.map((v) => (
-              <div key={v.id} className="mb-2 border-t border-slate-200 pt-2 text-sm">
-                <p><strong>{reviewStatusText(v.status)}</strong> · {when(v.createdAt)}</p>
-                <p className="text-slate-700">{v.finding}</p>
-              </div>
-            ))}
-          </section>
+          <ReviewSection
+            patientUid={patientUid}
+            recordingId={recordingId}
+            viewerUid={viewerUid}
+            canReview={canReview}
+          />
 
           <section className="rounded-lg bg-white p-4 shadow">
             <h2 className="mb-2 text-lg font-semibold">Recording details</h2>
