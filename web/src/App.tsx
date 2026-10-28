@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import RecordingView from './pages/RecordingView'
 import DoctorPatientView from './pages/DoctorPatientView'
+import AccountPage from './pages/AccountPage'
 
 // UX only: these redirects are not security controls. Access is enforced by Firestore/Storage rules.
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -67,6 +68,7 @@ export default function App() {
         </div>
       )}
       <Routes>
+        <Route path="/account" element={<RequireAuth><Page><AccountPage /></Page></RequireAuth>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />

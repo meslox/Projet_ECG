@@ -23,6 +23,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>
   register: (displayName: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  reloadProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -90,8 +91,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth)
   }
 
+  // Re-reads the profile document (used after the display name changes).
+  async function reloadProfile() {
+    const u = auth.currentUser
+    if (!u) return
+    const p = await loadProfile(u.uid).catch(() => undefined)
+    if (p !== undefined) setProfile(p)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, profile, loading, login, register, logout, reloadProfile }}>
       {children}
     </AuthContext.Provider>
   )

@@ -55,10 +55,11 @@ export async function authorizeDoctor(
   existing?: Grant,
 ): Promise<void> {
   if (existing) {
-    await updateDoc(doc(db, 'grants', existing.id), {
-      status: 'active',
-      grantedAt: serverTimestamp(),
-    })
+    const ref = doc(db, 'grants', existing.id)
+    if (existing.patientName !== patientName) {
+      await updateDoc(ref, { patientName })
+    }
+    await updateDoc(ref, { status: 'active', grantedAt: serverTimestamp() })
     return
   }
   await setDoc(doc(db, 'grants', `${patientUid}_${doctorUid}`), {

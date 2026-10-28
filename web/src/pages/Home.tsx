@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import DoctorDashboard from './DoctorDashboard'
 import PatientDashboard from './PatientDashboard'
@@ -16,9 +17,14 @@ export default function Home() {
             </p>
           )}
         </div>
-        <button onClick={() => void logout()} className="rounded border border-slate-300 px-3 py-1 text-sm">
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <Link to="/account" className="rounded border border-slate-300 px-3 py-1 text-sm">
+            Account
+          </Link>
+          <button onClick={() => void logout()} className="rounded border border-slate-300 px-3 py-1 text-sm">
+            Sign out
+          </button>
+        </div>
       </header>
 
       {!profile || !user ? (
