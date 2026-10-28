@@ -75,12 +75,20 @@ service cloud.firestore {
 
       allow update: if signedIn()
         && resource.data.patientUid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['status', 'revokedAt', 'grantedAt'])
-        && request.resource.data.status in ['active', 'revoked']
-        && (request.resource.data.status == 'revoked'
-            ? request.resource.data.revokedAt == request.time
-            : request.resource.data.grantedAt == request.time);
+        && (
+          // (a) rename: exactly the patientName field changes, nothing else
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['patientName'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasAll(['patientName'])
+            && validName(request.resource.data.patientName))
+          ||
+          // (b) access change: grant or revoke, with a fresh server timestamp
+          (request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['status', 'revokedAt', 'grantedAt'])
+            && request.resource.data.status in ['active', 'revoked']
+            && (request.resource.data.status == 'revoked'
+                ? request.resource.data.revokedAt == request.time
+                : request.resource.data.grantedAt == request.time))
+        );
 
       allow delete: if false;
     }
